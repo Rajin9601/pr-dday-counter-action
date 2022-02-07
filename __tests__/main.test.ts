@@ -1,29 +1,48 @@
-import {wait} from '../src/wait'
-import * as process from 'process'
-import * as cp from 'child_process'
-import * as path from 'path'
-import {expect, test} from '@jest/globals'
+// import * as github from '@actions/github'
+import { getLabelsToAddAndRemove } from "../src/dday-counter"
 
-test('throws invalid number', async () => {
-  const input = parseInt('foo', 10)
-  await expect(wait(input)).rejects.toThrow('milliseconds not a number')
+const countDownLabels = ["D0", "D1", "D2", "D3", "D4", "D5"]
+
+describe("getLabelsToAddAndRemove", () => {
+  it("one label", () => {
+    const pr = getPrForLabels("D1")
+    const result = getLabelsToAddAndRemove(pr, countDownLabels)
+    expect(result.labelsToAdd).toEqual(["D0"])
+    expect(result.labelsToRemove).toEqual(["D1"])
+  })
+
+  it("multiple labels", () => {
+    const pr = getPrForLabels("D1", "D4")
+    const result = getLabelsToAddAndRemove(pr, countDownLabels)
+    expect(result.labelsToAdd).toEqual(["D0"])
+    expect(result.labelsToRemove).toEqual(["D1", "D4"])
+  })
+
+  it("no labels", () => {
+    const pr = getPrForLabels("asf", "test")
+    const result = getLabelsToAddAndRemove(pr, countDownLabels)
+    expect(result.labelsToAdd).toEqual([])
+    expect(result.labelsToRemove).toEqual([])
+  })
+
+  it("D0 should not change", () => {
+    const pr = getPrForLabels("D0")
+    const result = getLabelsToAddAndRemove(pr, countDownLabels)
+    expect(result.labelsToAdd).toEqual([])
+    expect(result.labelsToRemove).toEqual([])
+  })
+
+  it("D0 should not change in multiple labels", () => {
+    const pr = getPrForLabels("D0", "D2")
+    const result = getLabelsToAddAndRemove(pr, countDownLabels)
+    expect(result.labelsToAdd).toEqual([])
+    expect(result.labelsToRemove).toEqual(["D2"])
+  })
 })
 
-test('wait 500 ms', async () => {
-  const start = new Date()
-  await wait(500)
-  const end = new Date()
-  var delta = Math.abs(end.getTime() - start.getTime())
-  expect(delta).toBeGreaterThan(450)
-})
-
-// shows how the runner will run a javascript action with env / stdout protocol
-test('test runs', () => {
-  process.env['INPUT_MILLISECONDS'] = '500'
-  const np = process.execPath
-  const ip = path.join(__dirname, '..', 'lib', 'main.js')
-  const options: cp.ExecFileSyncOptions = {
-    env: process.env
+function getPrForLabels(...labels: string[]) {
+  return {
+    number: 1,
+    labels: labels.map(x => { return { name: x } })
   }
-  console.log(cp.execFileSync(np, [ip], options).toString())
-})
+}
