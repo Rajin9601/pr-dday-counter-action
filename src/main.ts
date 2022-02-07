@@ -1,3 +1,3 @@
-import { run } from "./dday-counter";
+import {run} from './dday-counter'
 
 run()
