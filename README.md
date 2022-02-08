@@ -11,7 +11,7 @@ For `D-0` label, it stays in the PR.
 
 ```
 name: 'D-Day Counter'
-on: 
+on:
   schedule:
     - cron: '0 21 * * 0-4' # crontab (6:00 am mon-fri in Seoul timezone)
 
@@ -19,18 +19,18 @@ jobs:
   change-labels:
     runs-on: ubuntu-latest
     steps:
-      - uses: rajin9601/pr-dday-counter-action@v1
+      - uses: rajin9601/pr-dday-counter-action@v1.0.0
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          dday-labels: "D-0,D-1,D-2,D-3,D-4" 
+          dday-labels: "D-0,D-1,D-2,D-3,D-4"
 ```
 
 ### Inputs
 
-| Name | Description | Default | Required |
-| - | - | - | - |
-| `repo-token` | Token to use to authorize label changes. Typically the GITHUB_TOKEN secret | N/A | true |
-| `dday-labels` | D-Day labels as comma-seperated string in ascending order from 0 | N/A | true |
+| Name | Description | Required |
+| - | - | - |
+| `repo-token` | Token to use to authorize label changes. Typically the GITHUB_TOKEN secret | true |
+| `dday-labels` | D-Day labels as comma-seperated string in ascending order from 0 | true |
 
 ### Outputs
 
