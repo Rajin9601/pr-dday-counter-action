@@ -27,7 +27,13 @@ jobs:
 
 ### Inputs
 
-| Name | Description | Default |
+| Name | Description | Default | Required |
+| - | - | - | - |
+| `repo-token` | Token to use to authorize label changes. Typically the GITHUB_TOKEN secret | N/A | true |
+| `dday-labels` | D-Day labels as comma-seperated string in ascending order from 0 | N/A | true |
+
+### Outputs
+
+| Name | Description | format |
 | - | - | - |
-| `repo-token` | Token to use to authorize label changes. Typically the GITHUB_TOKEN secret | N/A |
-| `dday-labels` | D-Day labels as comma-seperated string in ascending order from 0 | N/A |
+| `pull_requests` | Pull request lists | { number: number, prevDDay?: number, nextDDay?: number } |
