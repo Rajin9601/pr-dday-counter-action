@@ -45,8 +45,9 @@ function run() {
             const countDownLabels = core.getInput('dday-labels').split(',');
             const client = github.getOctokit(token);
             const prList = yield getPrList(client);
+            const resultList = [];
             for (const pullRequest of prList) {
-                const { labelsToAdd, labelsToRemove } = getLabelsToAddAndRemove(pullRequest, countDownLabels);
+                const { labelsToAdd, labelsToRemove, prevDDay, nextDDay } = getLabelsToAddAndRemove(pullRequest, countDownLabels);
                 const prNumber = pullRequest.number;
                 if (labelsToAdd.length > 0) {
                     yield addLabels(client, prNumber, labelsToAdd);
@@ -54,7 +55,9 @@ function run() {
                 if (labelsToRemove.length > 0) {
                     yield removeLabels(client, prNumber, labelsToRemove);
                 }
+                resultList.push({ number: prNumber, prevDDay, nextDDay });
             }
+            core.setOutput('pull_requests', resultList);
             // eslint-disable-next-line  @typescript-eslint/no-explicit-any
         }
         catch (error) {
@@ -86,7 +89,7 @@ function getPrList(client) {
     });
 }
 function getLabelsToAddAndRemove(pullRequest, countDownLabels) {
-    let currentDDay = countDownLabels.length;
+    let curDDay = undefined;
     const labelsToRemove = [];
     const labelsToAdd = [];
     for (const label of pullRequest.labels) {
@@ -96,17 +99,23 @@ function getLabelsToAddAndRemove(pullRequest, countDownLabels) {
         }
         const index = countDownLabels.indexOf(labelName);
         if (index >= 0) {
-            currentDDay = Math.min(currentDDay, index);
+            if (curDDay !== undefined) {
+                curDDay = Math.min(curDDay, index);
+            }
+            else {
+                curDDay = index;
+            }
         }
         if (index > 0) {
             // D-0 should not be removed
             labelsToRemove.push(labelName);
         }
     }
-    if (currentDDay >= 1 && currentDDay < countDownLabels.length) {
-        labelsToAdd.push(countDownLabels[currentDDay - 1]);
+    const nextDDay = curDDay !== undefined ? Math.max(curDDay - 1, 0) : undefined;
+    if (nextDDay !== undefined && nextDDay !== curDDay) {
+        labelsToAdd.push(countDownLabels[nextDDay]);
     }
-    return { labelsToRemove, labelsToAdd };
+    return { labelsToRemove, labelsToAdd, nextDDay, prevDDay: curDDay };
 }
 exports.getLabelsToAddAndRemove = getLabelsToAddAndRemove;
 function addLabels(client, prNumber, labels) {
