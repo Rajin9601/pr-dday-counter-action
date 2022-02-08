@@ -8,6 +8,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./
+        id: run
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           dday-labels: "D-0,D-1,D-2,D-3,D-4"
+      - run: echo "${{join(steps.run.outputs.*, '\n')}}"
