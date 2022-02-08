@@ -7,6 +7,9 @@ inputs:
   dday-labels:
     required: true
     description: 'D-Day labels as comma-seperated string in ascending order from 0'
+outputs:
+  pull_requests:
+    description: 'Pull Requests list with D-Day info'
 runs:
   using: 'node12'
   main: 'dist/index.js'
