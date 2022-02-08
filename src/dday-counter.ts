@@ -7,6 +7,12 @@ type PullRequest = {
   labels: {name?: string}[]
 }
 
+type Result = {
+  number: number
+  prevDDay?: number
+  nextDDay?: number
+}
+
 export async function run(): Promise<void> {
   try {
     const token = core.getInput('repo-token', {required: true})
@@ -14,11 +20,10 @@ export async function run(): Promise<void> {
     const client: ClientType = github.getOctokit(token)
     const prList = await getPrList(client)
 
+    const resultList: Result[] = []
     for (const pullRequest of prList) {
-      const {labelsToAdd, labelsToRemove} = getLabelsToAddAndRemove(
-        pullRequest,
-        countDownLabels
-      )
+      const {labelsToAdd, labelsToRemove, prevDDay, nextDDay} =
+        getLabelsToAddAndRemove(pullRequest, countDownLabels)
       const prNumber = pullRequest.number
 
       if (labelsToAdd.length > 0) {
@@ -28,7 +33,10 @@ export async function run(): Promise<void> {
       if (labelsToRemove.length > 0) {
         await removeLabels(client, prNumber, labelsToRemove)
       }
+
+      resultList.push({number: prNumber, prevDDay, nextDDay})
     }
+    core.setOutput('pull_requests', resultList)
     // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   } catch (error: any) {
     core.error(error)
@@ -59,8 +67,13 @@ async function getPrList(client: ClientType): Promise<PullRequest[]> {
 export function getLabelsToAddAndRemove(
   pullRequest: PullRequest,
   countDownLabels: string[]
-): {labelsToRemove: string[]; labelsToAdd: string[]} {
-  let currentDDay = countDownLabels.length
+): {
+  labelsToRemove: string[]
+  labelsToAdd: string[]
+  prevDDay: number | undefined
+  nextDDay: number | undefined
+} {
+  let curDDay: number | undefined = undefined
   const labelsToRemove: string[] = []
   const labelsToAdd: string[] = []
 
@@ -71,17 +84,23 @@ export function getLabelsToAddAndRemove(
     }
     const index = countDownLabels.indexOf(labelName)
     if (index >= 0) {
-      currentDDay = Math.min(currentDDay, index)
+      if (curDDay !== undefined) {
+        curDDay = Math.min(curDDay, index)
+      } else {
+        curDDay = index
+      }
     }
     if (index > 0) {
       // D-0 should not be removed
       labelsToRemove.push(labelName)
     }
   }
-  if (currentDDay >= 1 && currentDDay < countDownLabels.length) {
-    labelsToAdd.push(countDownLabels[currentDDay - 1])
+  const nextDDay: number | undefined =
+    curDDay !== undefined ? Math.max(curDDay - 1, 0) : undefined
+  if (nextDDay !== undefined && nextDDay !== curDDay) {
+    labelsToAdd.push(countDownLabels[nextDDay])
   }
-  return {labelsToRemove, labelsToAdd}
+  return {labelsToRemove, labelsToAdd, nextDDay, prevDDay: curDDay}
 }
 
 async function addLabels(
